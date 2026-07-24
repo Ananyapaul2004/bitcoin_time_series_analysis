@@ -1,0 +1,683 @@
+#bitcoin_codes
+
+> library(tidyverse)
+── Attaching core tidyverse packages ────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.2.0
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.2     
+── Conflicts ──────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package to force all conflicts to become errors
+Warning messages:
+1: package ‘tidyverse’ was built under R version 4.6.1 
+2: package ‘ggplot2’ was built under R version 4.6.1 
+3: package ‘tibble’ was built under R version 4.6.1 
+4: package ‘tidyr’ was built under R version 4.6.1 
+5: package ‘readr’ was built under R version 4.6.1 
+6: package ‘purrr’ was built under R version 4.6.1 
+7: package ‘dplyr’ was built under R version 4.6.1 
+8: package ‘stringr’ was built under R version 4.6.1 
+9: package ‘forcats’ was built under R version 4.6.1 
+10: package ‘lubridate’ was built under R version 4.6.1 
+
+> library(lubridate)
+> 
+> my_file <- file.choose()
+> 
+> df <- read.csv(my_file, stringsAsFactors = FALSE)
+> colnames(df) <- trimws(colnames(df))
+> 
+> df$Start <- as.Date(df$Start)
+> df$End   <- as.Date(df$End)
+> 
+> df <- df %>% arrange(Start)
+> df <- df %>% select(Start, Open, High, Low, Close, Volume)
+> 
+> dim(df)
+[1] 5095    6
+> head(df)
+       Start   Open   High    Low  Close Volume
+1 2010-07-17 0.0500 0.0500 0.0500 0.0500      0
+2 2010-07-18 0.0858 0.0858 0.0858 0.0858      0
+3 2010-07-19 0.0808 0.0808 0.0808 0.0808      0
+4 2010-07-20 0.0747 0.0747 0.0747 0.0747      0
+5 2010-07-21 0.0792 0.0792 0.0792 0.0792      0
+6 2010-07-22 0.0505 0.0505 0.0505 0.0505      0
+> 
+> cat("Date range:", as.character(min(df$Start)), "to", as.character(max(df$Start)), "\n")
+Date range: 2010-07-17 to 2024-06-27 
+> cat("Number of rows:", nrow(df), "\n")
+Number of rows: 5095 
+> full_dates <- seq(min(df$Start), max(df$Start), by = "day")
+> cat("Missing dates:", length(setdiff(full_dates, df$Start)), "\n")
+Missing dates: 0 
+> colSums(is.na(df))
+ Start   Open   High    Low  Close Volume 
+     0      0      0      0      0      0 
+> sum(df$Low > df$Open | df$Low > df$Close | df$High < df$Open | df$High < df$Close)
+[1] 0
+> 
+> df <- df %>% mutate(log_return = log(Close / lag(Close)))
+> head(df, 10)
+        Start   Open   High    Low  Close Volume  log_return
+1  2010-07-17 0.0500 0.0500 0.0500 0.0500      0          NA
+2  2010-07-18 0.0858 0.0858 0.0858 0.0858      0  0.53999600
+3  2010-07-19 0.0808 0.0808 0.0808 0.0808      0 -0.06004204
+4  2010-07-20 0.0747 0.0747 0.0747 0.0747      0 -0.07849687
+5  2010-07-21 0.0792 0.0792 0.0792 0.0792      0  0.05849621
+6  2010-07-22 0.0505 0.0505 0.0505 0.0505      0 -0.45000296
+7  2010-07-23 0.0626 0.0626 0.0626 0.0626      0  0.21479194
+8  2010-07-24 0.0545 0.0545 0.0545 0.0545      0 -0.13856458
+9  2010-07-25 0.0505 0.0505 0.0505 0.0505      0 -0.07622737
+10 2010-07-26 0.0560 0.0560 0.0560 0.0560      0  0.10337835
+> summary(df$log_return)
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max.       NAs 
+-0.518084 -0.013269  0.001604  0.002753  0.018862  0.539996         1 
+> diagram_folder <- "C:/Users/Ananya/Documents/bitcoin_project_diagrams"
+> dir.create(diagram_folder, showWarnings = FALSE)
+> 
+> ggplot(df, aes(x = Start, y = Close)) +
++     geom_line(color = "steelblue") + scale_y_log10() +
++     labs(title = "Diagram 1: Bitcoin Close Price (Log Scale)", x = "Date", y = "Close (log scale)") +
++     theme_minimal()
+> ggsave(file.path(diagram_folder, "eda1_close_price.png"), width = 8, height = 5)
+> 
+> ggplot(df, aes(x = Start, y = Close)) +
++     geom_line(color = "steelblue") +
++     labs(title = "Diagram 2: Bitcoin Close Price (Linear Scale)", x = "Date", y = "Close") +
++     theme_minimal()
+> ggsave(file.path(diagram_folder, "eda2_close_price_linear.png"), width = 8, height = 5)
+> 
+> ggplot(df, aes(x = Start, y = log_return)) +
++     geom_line(color = "darkred", linewidth = 0.2) +
++     labs(title = "Diagram 3: Bitcoin Daily Log Returns", x = "Date", y = "Log Return") +
++     theme_minimal()
+Warning message:
+Removed 1 row containing missing values or values outside the scale range
+(`geom_line()`). 
+> ggsave(file.path(diagram_folder, "eda3_log_returns.png"), width = 8, height = 5)
+Warning message:
+Removed 1 row containing missing values or values outside the scale range
+(`geom_line()`). 
+> 
+> ggplot(df, aes(x = log_return)) +
++     geom_histogram(aes(y = after_stat(density)), bins = 100, fill = "steelblue", alpha = 0.6) +
++     stat_function(fun = dnorm, args = list(mean = mean(df$log_return, na.rm = TRUE),
++                                            sd = sd(df$log_return, na.rm = TRUE)),
++                   color = "red", linewidth = 1) +
++     labs(title = "Diagram 4: Distribution of Log Returns vs Normal", x = "Log Return", y = "Density") +
++     theme_minimal()
+Warning message:
+Removed 1 row containing non-finite outside the scale range (`stat_bin()`). 
+> ggsave(file.path(diagram_folder, "eda4_return_histogram.png"), width = 8, height = 5)
+Warning message:
+Removed 1 row containing non-finite outside the scale range (`stat_bin()`). 
+> 
+> library(zoo)
+
+Attaching package: ‘zoo’
+
+The following objects are masked from ‘package:base’:
+
+    as.Date, as.Date.numeric
+
+> df <- df %>%
++     mutate(roll_sd_30 = rollapply(log_return, width = 30, FUN = sd, fill = NA, align = "right"))
+> 
+> ggplot(df, aes(x = Start, y = roll_sd_30)) +
++     geom_line(color = "darkgreen") +
++     labs(title = "Diagram 5: 30-Day Rolling Volatility of Returns", x = "Date", y = "Rolling Std Dev") +
++     theme_minimal()
+Warning message:
+Removed 30 rows containing missing values or values outside the scale range
+(`geom_line()`). 
+> ggsave(file.path(diagram_folder, "eda5_rolling_volatility.png"), width = 8, height = 5)
+Warning message:
+Removed 30 rows containing missing values or values outside the scale range
+(`geom_line()`). 
+> 
+> qqnorm(df$log_return, main = "Diagram 6: QQ-Plot of Log Returns")
+> qqline(df$log_return, col = "red")
+> dev.copy(png, file.path(diagram_folder, "eda6_qqplot.png"), width = 800, height = 500); dev.off()
+png 
+  4 
+RStudioGD 
+        2 
+
+> summary(df$Close); summary(df$log_return); summary(df$Volume)
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+    0.05   230.38  2610.60 11844.95 17098.06 73087.95 
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max.       NAs 
+-0.518084 -0.013269  0.001604  0.002753  0.018862  0.539996         1 
+     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+0.000e+00 8.455e+06 1.225e+09 2.135e+10 3.429e+10 2.122e+11 
+> df <- df %>%
++     mutate(
++         lag1 = lag(log_return, 1),
++         lag2 = lag(log_return, 2),
++         lag3 = lag(log_return, 3),
++         lag5 = lag(log_return, 5),
++         lag7 = lag(log_return, 7),
++         log_volume = log(Volume + 1),
++         intraday_range = (High - Low) / Close
++     )
+> 
+> head(df %>% select(Start, log_return, lag1, lag2, lag3, lag5, lag7,
++                    log_volume, intraday_range), 10)
+        Start  log_return        lag1        lag2        lag3        lag5
+1  2010-07-17          NA          NA          NA          NA          NA
+2  2010-07-18  0.53999600          NA          NA          NA          NA
+3  2010-07-19 -0.06004204  0.53999600          NA          NA          NA
+4  2010-07-20 -0.07849687 -0.06004204  0.53999600          NA          NA
+5  2010-07-21  0.05849621 -0.07849687 -0.06004204  0.53999600          NA
+6  2010-07-22 -0.45000296  0.05849621 -0.07849687 -0.06004204          NA
+7  2010-07-23  0.21479194 -0.45000296  0.05849621 -0.07849687  0.53999600
+8  2010-07-24 -0.13856458  0.21479194 -0.45000296  0.05849621 -0.06004204
+9  2010-07-25 -0.07622737 -0.13856458  0.21479194 -0.45000296 -0.07849687
+10 2010-07-26  0.10337835 -0.07622737 -0.13856458  0.21479194  0.05849621
+          lag7 log_volume intraday_range
+1           NA          0              0
+2           NA          0              0
+3           NA          0              0
+4           NA          0              0
+5           NA          0              0
+6           NA          0              0
+7           NA          0              0
+8           NA          0              0
+9   0.53999600          0              0
+10 -0.06004204          0              0
+> df_clean <- df %>%
++     select(log_return, lag1, lag2, lag3, lag5, lag7, log_volume, intraday_range) %>%
++     drop_na()
+> 
+> # ---- 1. Correlation of every candidate with the target ----
+> cor_with_target <- cor(df_clean)[,"log_return"]
+> print(sort(abs(cor_with_target), decreasing = TRUE))
+    log_return intraday_range     log_volume           lag5           lag7 
+   1.000000000    0.140587443    0.053327136    0.045541251    0.044943306 
+          lag1           lag2           lag3 
+   0.035547595    0.023369705    0.003657329 
+> 
+> # ---- 2. Regression with everything included at once ----
+> model_full <- lm(log_return ~ lag1 + lag2 + lag3 + lag5 + lag7 +
++                      log_volume + intraday_range, data = df_clean)
+> summary(model_full)
+
+Call:
+lm(formula = log_return ~ lag1 + lag2 + lag3 + lag5 + lag7 + 
+    log_volume + intraday_range, data = df_clean)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.48745 -0.01794 -0.00408  0.01594  0.42092 
+
+Coefficients:
+                 Estimate Std. Error t value Pr(>|t|)    
+(Intercept)     9.606e-03  1.363e-03   7.048 2.05e-12 ***
+lag1            2.901e-02  1.392e-02   2.084 0.037234 *  
+lag2           -2.795e-02  1.387e-02  -2.016 0.043902 *  
+lag3            2.098e-03  1.373e-02   0.153 0.878514    
+lag5            3.907e-02  1.372e-02   2.848 0.004419 ** 
+lag7           -4.777e-02  1.361e-02  -3.511 0.000451 ***
+log_volume     -6.727e-05  7.239e-05  -0.929 0.352782    
+intraday_range -1.513e-01  1.623e-02  -9.322  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.04812 on 5079 degrees of freedom
+Multiple R-squared:  0.02547,	Adjusted R-squared:  0.02413 
+F-statistic: 18.96 on 7 and 5079 DF,  p-value: < 2.2e-16
+
+> library(tseries)
+Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo 
+
+    ‘tseries’ version: 0.10-61
+
+    ‘tseries’ is a package for time series analysis and computational
+    finance.
+
+    See ‘library(help="tseries")’ for details.
+
+Warning message:
+package ‘tseries’ was built under R version 4.6.1 
+> 
+> # ---- ADF test on raw Close price (expect: non-stationary) ----
+> adf_price <- adf.test(df$Close, alternative = "stationary")
+> print(adf_price)
+
+	Augmented Dickey-Fuller Test
+
+data:  df$Close
+Dickey-Fuller = -1.9673, Lag order = 17, p-value = 0.5922
+alternative hypothesis: stationary
+
+> 
+> # ---- ADF test on log returns (expect: stationary) ----
+> adf_returns <- adf.test(na.omit(df$log_return), alternative = "stationary")
+Warning message:
+In adf.test(na.omit(df$log_return), alternative = "stationary") :
+  p-value smaller than printed p-value
+> print(adf_returns)
+
+	Augmented Dickey-Fuller Test
+
+data:  na.omit(df$log_return)
+Dickey-Fuller = -14.461, Lag order = 17, p-value = 0.01
+alternative hypothesis: stationary
+
+> # ---- ACF and PACF of log returns ----
+> acf(na.omit(df$log_return), lag.max = 30, main = "ACF of Log Returns")
+> dev.copy(png, file.path(diagram_folder, "acf_returns.png"), width = 800, height = 500); dev.off()
+png 
+  4 
+RStudioGD 
+        2 
+> 
+> pacf(na.omit(df$log_return), lag.max = 30, main = "PACF of Log Returns")
+> dev.copy(png, file.path(diagram_folder, "pacf_returns.png"), width = 800, height = 500); dev.off()
+png 
+  4 
+RStudioGD 
+        2 
+
+> # ---- Ljung-Box test at one reasonable lag ----
+> Box.test(na.omit(df$log_return), lag = 10, type = "Ljung-Box")
+
+	Box-Ljung test
+
+data:  na.omit(df$log_return)
+X-squared = 59.215, df = 10, p-value = 5.1e-09
+
+> # ---- Add day-of-week column ----
+> df <- df %>% mutate(day_of_week = weekdays(Start))
+> 
+> # ---- One-way ANOVA: does average return differ by day of week? ----
+> anova_result <- aov(log_return ~ day_of_week, data = df)
+> summary(anova_result)
+              Df Sum Sq  Mean Sq F value Pr(>F)
+day_of_week    6  0.009 0.001556   0.627  0.709
+Residuals   5087 12.631 0.002483               
+1 observation deleted due to missingness
+> library(forecast)
+This is forecast 9.0.2 
+  Want to meet other forecasters? Join the International Institute of Forecasters:
+  http://forecasters.org/
+Warning message:
+package ‘forecast’ was built under R version 4.6.1 
+> 
+> # ---- Auto-select ARIMA order, forcing d=0 since returns are already stationary ----
+> auto_model <- auto.arima(na.omit(df$log_return), d = 0, seasonal = FALSE,
++                          stepwise = FALSE, approximation = FALSE)
+> 
+> summary(auto_model)
+Series: na.omit(df$log_return) 
+ARIMA(2,0,3) with zero mean 
+
+Coefficients:
+         ar1     ar2      ma1      ma2     ma3
+      0.5831  0.3873  -0.5664  -0.4136  0.0328
+s.e.  0.2647  0.2606   0.2652   0.2483  0.0175
+
+sigma^2 = 0.002473:  log likelihood = 8061.9
+AIC=-16111.8   AICc=-16111.78   BIC=-16072.58
+
+Training set error measures:
+                      ME       RMSE        MAE MPE MAPE      MASE
+Training set 0.001534584 0.04970875 0.02915209 NaN  Inf 0.6854877
+                     ACF1
+Training set -0.001074848
+> 
+> # ---- Residual diagnostics ----
+> checkresiduals(auto_model)
+
+	Ljung-Box test
+
+data:  Residuals from ARIMA(2,0,3) with zero mean
+Q* = 50.827, df = 5, p-value = 9.382e-10
+
+Model df: 5.   Total lags used: 10
+
+> # ---- Simple 80/20 train-test split ----
+> returns <- na.omit(df$log_return)
+> n <- length(returns)
+> split_point <- floor(n * 0.8)
+> 
+> train <- returns[1:split_point]
+> test <- returns[(split_point + 1):n]
+> 
+> # ---- Refit ARIMA(2,0,3) on training data only ----
+> fit_train <- Arima(train, order = c(2, 0, 3))
+> 
+> # ---- Forecast forward for the length of the test set ----
+> forecasted <- forecast(fit_train, h = length(test))
+> 
+> # ---- Naive baseline: "tomorrow = today" ----
+> naive_pred <- c(train[length(train)], head(test, -1))
+> 
+> # ---- Performance metrics ----
+> rmse <- function(actual, pred) sqrt(mean((actual - pred)^2, na.rm = TRUE))
+> mae  <- function(actual, pred) mean(abs(actual - pred), na.rm = TRUE)
+> 
+> cat("---- ARIMA(2,0,3) Performance ----\n")
+---- ARIMA(2,0,3) Performance ----
+> cat("RMSE:", rmse(test, as.numeric(forecasted$mean)), "\n")
+RMSE: 0.02972824 
+> cat("MAE: ", mae(test, as.numeric(forecasted$mean)), "\n\n")
+MAE:  0.02039849 
+
+> 
+> cat("---- Naive Baseline Performance ----\n")
+---- Naive Baseline Performance ----
+> cat("RMSE:", rmse(test, naive_pred), "\n")
+RMSE: 0.04206581 
+> cat("MAE: ", mae(test, naive_pred), "\n")
+MAE:  0.03049323 
+> # ---- Get ARIMA's fitted (in-sample) values ----
+> fitted_vals <- fitted(auto_model)
+> actual_vals <- na.omit(df$log_return)
+> 
+> # ---- Calculate R² manually: 1 - (unexplained variance / total variance) ----
+> ss_res <- sum((actual_vals - fitted_vals)^2)          # residual sum of squares
+> ss_tot <- sum((actual_vals - mean(actual_vals))^2)     # total sum of squares
+> 
+> r_squared_arima <- 1 - (ss_res / ss_tot)
+> cat("ARIMA(2,0,3) In-Sample R²:", r_squared_arima, "\n")
+ARIMA(2,0,3) In-Sample R²: 0.004224199 
+> 
+> # ---- Also calculate it for the out-of-sample test set, for a fairer real-world check ----
+> ss_res_test <- sum((test - as.numeric(forecasted$mean))^2)
+> ss_tot_test <- sum((test - mean(test))^2)
+> 
+> r_squared_arima_test <- 1 - (ss_res_test / ss_tot_test)
+> cat("ARIMA(2,0,3) Out-of-Sample R²:", r_squared_arima_test, "\n")
+ARIMA(2,0,3) Out-of-Sample R²: -0.0110221 
+> library(rugarch)
+Loading required package: parallel
+
+Attaching package: ‘rugarch’
+
+The following object is masked from ‘package:purrr’:
+
+    reduce
+
+Warning message:
+package ‘rugarch’ was built under R version 4.6.1 
+> 
+> # ---- Specify GARCH(1,1), using the ARIMA(2,0,3) mean structure, Student-t distribution ----
+> garch_spec <- ugarchspec(
++     variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
++     mean.model = list(armaOrder = c(2,3), include.mean = FALSE),
++     distribution.model = "std"
++ )
+> 
+> # ---- Fit on log returns ----
+> garch_fit <- ugarchfit(spec = garch_spec, data = na.omit(df$log_return))
+> 
+> # ---- View results ----
+> print(garch_fit)
+
+*---------------------------------*
+*          GARCH Model Fit        *
+*---------------------------------*
+
+Conditional Variance Dynamics 	
+-----------------------------------
+GARCH Model	: sGARCH(1,1)
+Mean Model	: ARFIMA(2,0,3)
+Distribution	: std 
+
+Optimal Parameters
+------------------------------------
+        Estimate  Std. Error  t value Pr(>|t|)
+ar1    -0.580107    0.147815 -3.92454 0.000087
+ar2    -0.764252    0.165194 -4.62638 0.000004
+ma1     0.542801    0.149214  3.63774 0.000275
+ma2     0.738578    0.166414  4.43821 0.000009
+ma3    -0.011916    0.016836 -0.70778 0.479081
+omega   0.000036    0.000008  4.46569 0.000008
+alpha1  0.157342    0.013490 11.66368 0.000000
+beta1   0.841658    0.014039 59.95237 0.000000
+shape   3.071658    0.102493 29.96934 0.000000
+
+Robust Standard Errors:
+        Estimate  Std. Error  t value Pr(>|t|)
+ar1    -0.580107    0.139698 -4.15257 0.000033
+ar2    -0.764252    0.179399 -4.26007 0.000020
+ma1     0.542801    0.142927  3.79774 0.000146
+ma2     0.738578    0.183105  4.03364 0.000055
+ma3    -0.011916    0.016618 -0.71707 0.473333
+omega   0.000036    0.000016  2.19939 0.027850
+alpha1  0.157342    0.015867  9.91651 0.000000
+beta1   0.841658    0.024502 34.35048 0.000000
+shape   3.071658    0.101994 30.11600 0.000000
+
+LogLikelihood : 10041.97 
+
+Information Criteria
+------------------------------------
+                    
+Akaike       -3.9391
+Bayes        -3.9276
+Shibata      -3.9391
+Hannan-Quinn -3.9351
+
+Weighted Ljung-Box Test on Standardized Residuals
+------------------------------------
+                         statistic   p-value
+Lag[1]                       36.42 1.595e-09
+Lag[2*(p+q)+(p+q)-1][14]     63.69 0.000e+00
+Lag[4*(p+q)+(p+q)-1][24]     80.15 0.000e+00
+d.o.f=5
+H0 : No serial correlation
+
+Weighted Ljung-Box Test on Standardized Squared Residuals
+------------------------------------
+                        statistic   p-value
+Lag[1]                     0.6916 4.056e-01
+Lag[2*(p+q)+(p+q)-1][5]   16.8670 1.392e-04
+Lag[4*(p+q)+(p+q)-1][9]   28.0495 1.482e-06
+d.o.f=2
+
+Weighted ARCH LM Tests
+------------------------------------
+            Statistic Shape Scale   P-Value
+ARCH Lag[3]    0.9507 0.500 2.000 3.295e-01
+ARCH Lag[5]   31.8100 1.440 1.667 2.172e-08
+ARCH Lag[7]   34.3897 2.315 1.543 1.113e-08
+
+Nyblom stability test
+------------------------------------
+Joint Statistic:  25.5329
+Individual Statistics:              
+ar1    0.28697
+ar2    0.12259
+ma1    0.28779
+ma2    0.11879
+ma3    0.03548
+omega  0.46852
+alpha1 3.89761
+beta1  0.98702
+shape  0.26326
+
+Asymptotic Critical Values (10% 5% 1%)
+Joint Statistic:     	 2.1 2.32 2.82
+Individual Statistic:	 0.35 0.47 0.75
+
+Sign Bias Test
+------------------------------------
+                   t-value   prob sig
+Sign Bias           1.2210 0.2221    
+Negative Sign Bias  0.1663 0.8679    
+Positive Sign Bias  0.3977 0.6909    
+Joint Effect        1.6613 0.6456    
+
+
+Adjusted Pearson Goodness-of-Fit Test:
+------------------------------------
+  group statistic p-value(g-1)
+1    20     146.1    1.217e-21
+2    30     159.8    5.100e-20
+3    40     181.4    2.984e-20
+4    50     183.8    1.789e-17
+
+
+Elapsed time : 1.650862 
+
+> library(rugarch)
+> 
+> # ---- Specify GARCH(1,1), using ARIMA(2,0,3) mean structure, Student-t distribution ----
+> garch_spec <- ugarchspec(
++     variance.model = list(model = "sGARCH", garchOrder = c(1,1)),
++     mean.model = list(armaOrder = c(2,3), include.mean = FALSE),
++     distribution.model = "std"
++ )
+> 
+> # ---- Fit on log returns ----
+> garch_fit <- ugarchfit(spec = garch_spec, data = na.omit(df$log_return))
+> 
+> # ---- Extract only the core coefficient table (alpha1, beta1, shape, etc.) ----
+> garch_fit@fit$matcoef
+            Estimate   Std. Error    t value     Pr(>|t|)
+ar1    -5.801075e-01 1.478154e-01 -3.9245393 8.689587e-05
+ar2    -7.642518e-01 1.651943e-01 -4.6263819 3.721088e-06
+ma1     5.428014e-01 1.492139e-01  3.6377410 2.750398e-04
+ma2     7.385784e-01 1.664138e-01  4.4382056 9.071196e-06
+ma3    -1.191591e-02 1.683560e-02 -0.7077808 4.790814e-01
+omega   3.597501e-05 8.055871e-06  4.4656881 7.981181e-06
+alpha1  1.573418e-01 1.348989e-02 11.6636851 0.000000e+00
+beta1   8.416582e-01 1.403878e-02 59.9523745 0.000000e+00
+shape   3.071658e+00 1.024934e-01 29.9693422 0.000000e+00
+> 
+> # ---- Model fit quality ----
+> infocriteria(garch_fit)
+                      
+Akaike       -3.939134
+Bayes        -3.927586
+Shibata      -3.939140
+Hannan-Quinn -3.935090
+> 
+> # ---- ARCH-LM test only (justifies why GARCH was needed) ----
+> # This checks whether volatility clustering exists in the residuals
+> library(FinTS)
+
+Attaching package: ‘FinTS’
+
+The following object is masked from ‘package:forecast’:
+
+    Acf
+
+Warning message:
+package ‘FinTS’ was built under R version 4.6.1 
+> ArchTest(residuals(auto_model), lags = 10)
+
+	ARCH LM-test; Null hypothesis: no ARCH effects
+
+data:  residuals(auto_model)
+Chi-squared = 532.52, df = 10, p-value < 2.2e-16
+
+> # ---- Build lagged versions of the rolling volatility series ----
+> df <- df %>%
++     mutate(
++         lag_vol1 = lag(roll_sd_30, 1),
++         lag_vol5 = lag(roll_sd_30, 5),
++         lag_vol10 = lag(roll_sd_30, 10)
++     )
+> 
+> # ---- Clean dataset for this regression ----
+> df_vol <- df %>%
++     select(roll_sd_30, lag_vol1, lag_vol5, lag_vol10) %>%
++     drop_na()
+> 
+> # ---- Simple regression: does past volatility predict current volatility? ----
+> model_vol <- lm(roll_sd_30 ~ lag_vol1 + lag_vol5 + lag_vol10, data = df_vol)
+> summary(model_vol)
+
+Call:
+lm(formula = roll_sd_30 ~ lag_vol1 + lag_vol5 + lag_vol10, data = df_vol)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.055005 -0.000533 -0.000104  0.000464  0.066300 
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  4.857e-04  8.202e-05   5.922 3.39e-09 ***
+lag_vol1     1.067e+00  6.085e-03 175.355  < 2e-16 ***
+lag_vol5    -5.854e-02  8.703e-03  -6.727 1.92e-11 ***
+lag_vol10   -2.061e-02  5.167e-03  -3.990 6.71e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.003083 on 5051 degrees of freedom
+Multiple R-squared:  0.986,	Adjusted R-squared:  0.986 
+F-statistic: 1.189e+05 on 3 and 5051 DF,  p-value: < 2.2e-16
+
+> # ---- Identify where OHLC actually shows real intraday variation ----
+> df <- df %>%
++     mutate(ohlc_reliable = ifelse(Open == High & High == Low & Low == Close, 0, 1))
+> 
+> last_flat_date <- df %>% filter(ohlc_reliable == 0) %>% summarise(max(Start)) %>% pull()
+> cat("Data becomes reliable after:", as.character(last_flat_date), "\n")
+Data becomes reliable after: 2018-01-24 
+> 
+> # ---- Re-run the validation using only the reliable period ----
+> vol_compare_valid <- vol_compare %>%
++     filter(Start > last_flat_date)
+Error: object 'vol_compare' not found
+
+> # ---- Build a simple, model-free volatility measure directly from the data ----
+> df <- df %>%
++     mutate(realized_vol = (High - Low) / Close)
+> 
+> # ---- Extract GARCH's own estimated volatility for each day ----
+> dates_used <- df$Start[!is.na(df$log_return)]
+> garch_vol <- as.numeric(sigma(garch_fit))
+> 
+> garch_vol_df <- data.frame(Start = dates_used, garch_vol = garch_vol)
+> 
+> # ---- Merge GARCH's estimate with the independent realized volatility measure ----
+> vol_compare <- garch_vol_df %>%
++     inner_join(df %>% select(Start, realized_vol), by = "Start")
+> 
+> # ---- Correlation: how closely do they agree? ----
+> cor(vol_compare$garch_vol, vol_compare$realized_vol)
+[1] 0.1486026
+> 
+> # ---- Visual comparison ----
+> ggplot(vol_compare, aes(x = Start)) +
++     geom_line(aes(y = realized_vol, color = "Realized (High-Low/Close)")) +
++     geom_line(aes(y = garch_vol, color = "GARCH Estimated")) +
++     labs(title = "GARCH Estimated Volatility vs Realized Volatility",
++          x = "Date", y = "Volatility", color = "Source") +
++     theme_minimal()
+> ggsave(file.path(diagram_folder, "garch_validation.png"), width = 8, height = 5)
+> # ---- Identify where OHLC actually shows real intraday variation ----
+> df <- df %>%
++     mutate(ohlc_reliable = ifelse(Open == High & High == Low & Low == Close, 0, 1))
+> 
+> last_flat_date <- df %>% filter(ohlc_reliable == 0) %>% summarise(max(Start)) %>% pull()
+> cat("Data becomes reliable after:", as.character(last_flat_date), "\n")
+Data becomes reliable after: 2018-01-24 
+> 
+> # ---- Re-run the validation using only the reliable period ----
+> vol_compare_valid <- vol_compare %>%
++     filter(Start > last_flat_date)
+> 
+> cor(vol_compare_valid$garch_vol, vol_compare_valid$realized_vol)
+[1] 0.4780057
+> 
+> ggplot(vol_compare_valid, aes(x = Start)) +
++     geom_line(aes(y = realized_vol, color = "Realized (High-Low/Close)")) +
++     geom_line(aes(y = garch_vol, color = "GARCH Estimated")) +
++     labs(title = "GARCH vs Realized Volatility (Reliable Period Only)",
++          x = "Date", y = "Volatility", color = "Source") +
++     theme_minimal()
+> ggsave(file.path(diagram_folder, "garch_validation_fixed.png"), width = 8, height = 5)
+> df %>% filter(Open == High & High == Low & Low == Close) %>% summarise(count = n(), last_date = max(Start))
+  count  last_date
+1  1018 2018-01-24
