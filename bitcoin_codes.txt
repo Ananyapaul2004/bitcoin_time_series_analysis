@@ -624,11 +624,7 @@ F-statistic: 1.189e+05 on 3 and 5051 DF,  p-value: < 2.2e-16
 > last_flat_date <- df %>% filter(ohlc_reliable == 0) %>% summarise(max(Start)) %>% pull()
 > cat("Data becomes reliable after:", as.character(last_flat_date), "\n")
 Data becomes reliable after: 2018-01-24 
-> 
-> # ---- Re-run the validation using only the reliable period ----
-> vol_compare_valid <- vol_compare %>%
-+     filter(Start > last_flat_date)
-Error: object 'vol_compare' not found
+
 
 > # ---- Build a simple, model-free volatility measure directly from the data ----
 > df <- df %>%
@@ -681,3 +677,11 @@ Data becomes reliable after: 2018-01-24
 > df %>% filter(Open == High & High == Low & Low == Close) %>% summarise(count = n(), last_date = max(Start))
   count  last_date
 1  1018 2018-01-24
+> coef_garch <- coef(garch_fit)
+> 
+> alpha <- coef_garch["alpha1"]
+> beta  <- coef_garch["beta1"]
+> 
+> alpha + beta
+alpha1 
+ 0.999 
